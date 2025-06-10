@@ -1,17 +1,19 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Download, Shield, Users, Clock, AlertTriangle } from 'lucide-react';
+import { Download, Shield, Users, Clock, AlertTriangle, Eye, Lock } from 'lucide-react';
 import PDFViewer from '@/components/PDFViewer';
-import DemoVideo from '@/components/DemoVideo';
 
 const Index = () => {
   const [showPDFViewer, setShowPDFViewer] = useState(false);
   const [totalDemos, setTotalDemos] = useState(1000);
   const [userIP, setUserIP] = useState('');
   const [isIPBanned, setIsIPBanned] = useState(false);
+  const [showCodeInput, setShowCodeInput] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [serialNumber, setSerialNumber] = useState(1);
 
   useEffect(() => {
     // Get user IP and check for bans
@@ -23,7 +25,7 @@ const Index = () => {
       })
       .catch(() => setUserIP('unknown'));
 
-    // Load persistent demo counts
+    // Load persistent demo counts and serial
     loadDemoTracking();
   }, []);
 
@@ -50,13 +52,15 @@ const Index = () => {
     if (stored) {
       const data = JSON.parse(stored);
       setTotalDemos(data.totalRemaining || 1000);
+      setSerialNumber(data.currentSerial || 1);
     }
   };
 
-  const saveDemoTracking = (total: number) => {
+  const saveDemoTracking = (total: number, serial: number) => {
     const data = {
       date: new Date().toDateString(),
-      totalRemaining: total
+      totalRemaining: total,
+      currentSerial: serial
     };
     localStorage.setItem('demo_tracking', JSON.stringify(data));
   };
@@ -69,7 +73,8 @@ const Index = () => {
     const kofiUrl = `https://ko-fi.com/s/a123456789?data=${encodeURIComponent(JSON.stringify({
       paymentId,
       product: 'millionaire_secret_pdf',
-      discord: 'https://discord.gg/CS8uYhC9fH'
+      discord: 'https://discord.gg/CS8uYhC9fH',
+      code: '4242'
     }))}`;
     
     // Store payment attempt
@@ -82,22 +87,31 @@ const Index = () => {
     // Open Ko-fi in new tab
     window.open(kofiUrl, '_blank');
     
-    toast.success('Payment window opened. After payment, return here for PDF access.');
+    toast.success('Payment window opened. After payment, return here and enter the 4-digit code provided.');
   };
 
-  const checkPaymentStatus = () => {
-    // Simulate payment verification
+  const handlePaymentVerification = () => {
+    if (verificationCode !== '4242') {
+      toast.error('Invalid verification code. Please check your payment confirmation.');
+      return;
+    }
+
     const pendingPayment = localStorage.getItem('pending_payment');
     if (pendingPayment) {
       const payment = JSON.parse(pendingPayment);
-      // In real implementation, this would verify with Ko-fi webhook
       toast.success('Payment verified! Generating your secure PDF...');
       localStorage.removeItem('pending_payment');
       
-      // Update total count
+      // Update total count and serial
       const newTotal = totalDemos - 1;
+      const newSerial = serialNumber + 1;
       setTotalDemos(newTotal);
-      saveDemoTracking(newTotal);
+      setSerialNumber(newSerial);
+      saveDemoTracking(newTotal, newSerial);
+      
+      // Reset UI state
+      setShowCodeInput(false);
+      setVerificationCode('');
       
       // Generate full PDF access
       setTimeout(() => {
@@ -110,6 +124,11 @@ const Index = () => {
     } else {
       toast.error('No payment found. Please complete payment first.');
     }
+  };
+
+  const checkPaymentStatus = () => {
+    setShowCodeInput(true);
+    toast.info('Enter the 4-digit verification code from your payment confirmation.');
   };
 
   const startScreenshotDetection = () => {
@@ -182,7 +201,7 @@ const Index = () => {
       </div>
 
       {showPDFViewer && (
-        <PDFViewer onClose={() => setShowPDFViewer(false)} />
+        <PDFViewer onClose={() => setShowPDFViewer(false)} serialNumber={serialNumber} />
       )}
 
       <div className="relative z-10 container mx-auto px-4 py-8">
@@ -207,8 +226,43 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Demo Video */}
-        <DemoVideo />
+        {/* PDF Preview */}
+        <Card className="bg-gray-900 border-yellow-400 border-2 p-8 mb-8 glow-effect max-w-4xl mx-auto">
+          <div className="text-center mb-6">
+            <Eye className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+            <h3 className="text-2xl font-bold mb-6 text-yellow-400">GOLDEN PDF PREVIEW</h3>
+          </div>
+          
+          <div className="relative">
+            {/* Blurred PDF Content Preview */}
+            <div className="bg-gray-800 p-6 rounded-lg border border-yellow-400 relative overflow-hidden">
+              <div className="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-sm z-10 flex items-center justify-center">
+                <div className="text-center">
+                  <Lock className="w-16 h-16 text-yellow-400 mx-auto mb-4 animate-pulse" />
+                  <p className="text-yellow-400 text-xl font-bold">ENCRYPTED CONTENT</p>
+                  <p className="text-gray-300 text-sm mt-2">Purchase required to unlock</p>
+                </div>
+              </div>
+              
+              {/* Preview Content (blurred background) */}
+              <div className="blur-md">
+                <h4 className="text-2xl font-bold text-yellow-400 mb-4">The Millionaire's Secret to the Universe</h4>
+                <p className="text-lg leading-relaxed mb-4">
+                  You are the god of your universe, but ego—judgments, memories, and the autopilot voice in your head—dims reality's vibrance. Most live trapped, unaware they create their world...
+                </p>
+                <div className="bg-gray-700 p-4 rounded border border-yellow-400 mb-4">
+                  <h5 className="font-bold text-yellow-400 mb-2">The Principle: No-Ego Living</h5>
+                  <p>1. Notice: Catch when your mind drifts to the head-based voice...</p>
+                  <p>2. Detach: Drop all judgments and memories...</p>
+                  <p>3. Intend & Act: Declare, "Today, I am the boldest, freest creator..."</p>
+                </div>
+                <p className="text-lg">
+                  This transformed me: people aligned, opportunities arose, and I felt one with the world's rhythm...
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
 
         {/* Security Warning */}
         <Card className="bg-red-900 border-red-400 border-2 p-6 mb-8">
@@ -224,34 +278,15 @@ const Index = () => {
           </div>
         </Card>
 
-        {/* Teaser Section */}
-        <Card className="bg-gray-900 border-yellow-400 border-2 p-8 mb-8 glow-effect">
-          <div className="text-center">
-            <Shield className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold mb-6 text-yellow-400">THE SECRET REVEALED</h3>
-            <div className="text-lg leading-relaxed mb-8 text-gray-100">
-              <p className="mb-4">
-                <strong>You are the creator of your universe</strong>, but ego traps you in a headspace that dulls reality's brilliance.
-              </p>
-              <p className="mb-4">
-                <strong>This secret, known only to the elite</strong>, lets you live free of judgment, one with nature's pulse—yet just 1,000 will claim it.
-              </p>
-              <p className="text-red-400 font-bold">
-                <strong>Act now, or stay lost in the autopilot of someone else's world.</strong>
-              </p>
-            </div>
-          </div>
-        </Card>
-
         {/* Purchase Section */}
         <div className="flex justify-center mb-8">
           <Card className="bg-gray-900 border-green-400 border-2 p-8 glow-effect max-w-lg">
             <div className="text-center">
-              <Download className="w-12 h-12 text-green-400 mx-auto mb-4 animate-bounce" />
+              <Shield className="w-12 h-12 text-green-400 mx-auto mb-4 animate-bounce" />
               <h3 className="text-2xl font-bold mb-4 text-green-400">Secure PDF Access (1 Hour)</h3>
               <p className="text-gray-300 mb-6">
                 One-hour access to the complete Golden PDF with Discord community access.
-                AES-256 encrypted with unique serial number and interactive features.
+                AES-256 encrypted with unique serial number.
               </p>
               
               <div className="mb-6">
@@ -272,13 +307,33 @@ const Index = () => {
                   BUY VIA KO-FI ($1)
                 </Button>
                 
-                <Button
-                  onClick={checkPaymentStatus}
-                  variant="outline"
-                  className="w-full border-green-400 text-green-400 hover:bg-green-400 hover:text-black"
-                >
-                  I COMPLETED PAYMENT
-                </Button>
+                {!showCodeInput ? (
+                  <Button
+                    onClick={checkPaymentStatus}
+                    variant="outline"
+                    className="w-full border-green-400 text-green-400 hover:bg-green-400 hover:text-black"
+                  >
+                    I COMPLETED PAYMENT
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    <Input
+                      type="text"
+                      placeholder="Enter 4-digit verification code"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.slice(0, 4))}
+                      className="text-center text-lg tracking-widest"
+                      maxLength={4}
+                    />
+                    <Button
+                      onClick={handlePaymentVerification}
+                      className="w-full bg-green-400 text-black hover:bg-green-300"
+                      disabled={verificationCode.length !== 4}
+                    >
+                      VERIFY & ACCESS PDF
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
