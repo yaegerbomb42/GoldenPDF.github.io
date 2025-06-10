@@ -70,7 +70,7 @@ const Index = () => {
     const paymentId = `payment_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     
     // Ko-fi payment URL with custom data
-    const kofiUrl = `https://ko-fi.com/s/43de88b88c?data=${encodeURIComponent(JSON.stringify({
+    const kofiUrl = `https://ko-fi.com/s/a123456789?data=${encodeURIComponent(JSON.stringify({
       paymentId,
       product: 'millionaire_secret_pdf',
       discord: 'https://discord.gg/CS8uYhC9fH',
