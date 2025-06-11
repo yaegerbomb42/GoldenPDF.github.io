@@ -4,7 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
-  base: "/GoldenPDF.github.io/",
+  // base: "/GoldenPDF.github.io/", // Commented out for root deployment (e.g., Vercel)
   server: {
     host: "::",
     port: 8080,

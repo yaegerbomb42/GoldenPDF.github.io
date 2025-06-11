@@ -28,11 +28,9 @@
     <!-- Security Headers -->
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://plausible.io data:;">
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-    <meta http-equiv="X-Frame-Options" content="DENY" />
     <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
 
     <!-- Preload Critical Resources -->
-    <link rel="preload" href="/src/main.tsx" as="script" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     
     <!-- Favicon -->
@@ -74,7 +72,7 @@
 
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/main.tsx"></script>
     
     <!-- Plausible Analytics (Privacy-Compliant) -->
     <script defer data-domain="goldenpdf.lovable.app" src="https://plausible.io/js/script.js"></script>
