@@ -55,6 +55,8 @@ const Index = () => {
   };
 
   useEffect(() => {
+    console.log("Backend API URL:", BACKEND_API_URL); // Log API URL for verification
+
     // Generate and store senderId
     let senderId = localStorage.getItem('senderId');
     if (!senderId) {
@@ -87,7 +89,7 @@ const Index = () => {
       .then(response => {
         if (!response.ok) {
           // If backend is not running or endpoint doesn't exist, this will catch it
-          console.error(`Error tracking share link: HTTP status ${response.status}`);
+          console.error(`Error tracking share link: HTTP status ${response.status}`, response); // Log full response
           toast.error('Failed to track link open. Backend might not be available.');
           return Promise.reject('Backend not available');
         }
@@ -105,7 +107,7 @@ const Index = () => {
         }
       })
       .catch(error => {
-        console.error('Error tracking share link:', error);
+        console.error('Error tracking share link:', error); // Log full error object
         toast.error('Failed to track link open.');
       });
     }
@@ -419,7 +421,7 @@ const Index = () => {
                         // Start polling for access code
                         startPollingForAccessCode(currentSenderId, shareId);
                       } catch (error) {
-                        console.error('Error generating share link:', error);
+                        console.error('Error generating share link:', error); // Log full error object
                         toast.error('Failed to generate share link. Backend might not be available.');
                       }
                     }}
