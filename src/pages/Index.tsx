@@ -20,6 +20,7 @@ const Index = () => {
   const [serialNumber, setSerialNumber] = useState(1);
   const [generatedShareLink, setGeneratedShareLink] = useState('');
   const [accessCode, setAccessCode] = useState('');
+  const [uniqueOpensCount, setUniqueOpensCount] = useState(0); // New state for unique opens
 
   // Function to poll backend for access code
   const startPollingForAccessCode = (senderId: string, shareId: string) => {
@@ -28,6 +29,7 @@ const Index = () => {
         const statusResponse = await fetch(`${BACKEND_API_URL}/check-link-status/${shareId}`);
         if (!statusResponse.ok) throw new Error(`HTTP error! status: ${statusResponse.status}`);
         const statusData = await statusResponse.json();
+        setUniqueOpensCount(statusData.uniqueOpens); // Update unique opens count
 
         if (statusData.uniqueOpens >= 2 && !statusData.accessCodeRedeemed) {
           clearInterval(intervalId); // Stop polling
@@ -99,6 +101,7 @@ const Index = () => {
         if (data.status === 'success') {
           console.log(`Shared link opened with ID: ${shareId}. Unique opens: ${data.uniqueOpens}`);
           toast.success(`Link tracked! Unique opens: ${data.uniqueOpens}`);
+          setUniqueOpensCount(data.uniqueOpens); // Update unique opens count on initial track
           // If a shareId is present in the URL, start polling for its status
           startPollingForAccessCode(senderId, shareId);
         } else {
@@ -436,6 +439,11 @@ const Index = () => {
                   {generatedShareLink && (
                     <p className="text-sm text-gray-400 break-all">
                       Share this link: <a href={generatedShareLink} target="_blank" rel="noopener noreferrer" className="text-yellow-400 hover:underline">{generatedShareLink}</a>
+                    </p>
+                  )}
+                  {generatedShareLink && (
+                    <p className="text-sm text-gray-400">
+                      Current unique opens: {uniqueOpensCount}
                     </p>
                   )}
                 </div>
