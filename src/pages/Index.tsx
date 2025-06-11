@@ -6,7 +6,9 @@ import { toast } from 'sonner';
 import { Download, Shield, Users, Clock, AlertTriangle, Eye, Lock } from 'lucide-react';
 import PDFViewer from '@/components/PDFViewer';
 
-const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3001/api'; // Default for local development
+import { API_BASE_URL } from '@/lib/api';
+
+const BACKEND_API_URL = API_BASE_URL;
 
 const Index = () => {
   const [showPDFViewer, setShowPDFViewer] = useState(false);
@@ -53,6 +55,13 @@ const Index = () => {
   };
 
   useEffect(() => {
+    // Generate and store senderId
+    let senderId = localStorage.getItem('senderId');
+    if (!senderId) {
+      senderId = `sender_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+      localStorage.setItem('senderId', senderId);
+    }
+
     // Get user IP and check for bans
     fetch('https://api.ipify.org?format=json')
       .then(response => response.json())
@@ -88,6 +97,8 @@ const Index = () => {
         if (data.status === 'success') {
           console.log(`Shared link opened with ID: ${shareId}. Unique opens: ${data.uniqueOpens}`);
           toast.success(`Link tracked! Unique opens: ${data.uniqueOpens}`);
+          // If a shareId is present in the URL, start polling for its status
+          startPollingForAccessCode(senderId, shareId);
         } else {
           console.log(`Link open already counted or error: ${data.status}`);
           toast.info(`Link open already counted.`);
@@ -382,8 +393,7 @@ const Index = () => {
                 <div className="space-y-2">
                   <Button
                     onClick={async () => {
-                      const uniqueSenderId = localStorage.getItem('senderId') || `sender_${Date.now()}`;
-                      localStorage.setItem('senderId', uniqueSenderId);
+                      const currentSenderId = localStorage.getItem('senderId'); // senderId is guaranteed to exist from useEffect
 
                       try {
                         const response = await fetch(`${BACKEND_API_URL}/generate-share-link`, {
@@ -391,7 +401,7 @@ const Index = () => {
                           headers: {
                             'Content-Type': 'application/json',
                           },
-                          body: JSON.stringify({ senderId: uniqueSenderId }),
+                          body: JSON.stringify({ senderId: currentSenderId }),
                         });
 
                         if (!response.ok) {
@@ -407,7 +417,7 @@ const Index = () => {
                         toast.success('Share link generated and copied to clipboard!');
 
                         // Start polling for access code
-                        startPollingForAccessCode(uniqueSenderId, shareId);
+                        startPollingForAccessCode(currentSenderId, shareId);
                       } catch (error) {
                         console.error('Error generating share link:', error);
                         toast.error('Failed to generate share link. Backend might not be available.');
