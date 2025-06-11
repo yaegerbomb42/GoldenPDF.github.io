@@ -22,6 +22,7 @@ const Index = () => {
   const [generatedShareLink, setGeneratedShareLink] = useState('');
   const [accessCode, setAccessCode] = useState('');
   const [uniqueOpensCount, setUniqueOpensCount] = useState(0); // New state for unique opens
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(false); // New state for welcome message
 
   // Function to poll backend for access code
   const startPollingForAccessCode = (senderId: string, shareId: string) => {
@@ -65,6 +66,19 @@ const Index = () => {
     if (!senderId) {
       senderId = `sender_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
       localStorage.setItem('senderId', senderId);
+      setShowWelcomeMessage(true); // Show welcome message for new users
+      // Notify backend about new user
+      fetch(`${BACKEND_API_URL}/notify-new-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ senderId, userIP }),
+      }).then(response => {
+        if (!response.ok) {
+          console.error('Failed to notify backend about new user:', response);
+        }
+      }).catch(error => {
+        console.error('Error notifying backend about new user:', error);
+      });
     }
 
     // Get user IP and check for bans
@@ -276,6 +290,23 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden relative">
+      {showWelcomeMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+          <Card className="bg-gray-900 border-yellow-400 border-2 p-8 max-w-md text-center">
+            <h2 className="text-3xl font-bold text-yellow-400 mb-4">Welcome, New User!</h2>
+            <p className="text-gray-300 mb-6">
+              We're excited to have you here. Explore the secrets within the Golden PDF.
+            </p>
+            <Button
+              onClick={() => setShowWelcomeMessage(false)}
+              className="bg-yellow-400 text-black hover:bg-yellow-300 font-bold py-2 px-6"
+            >
+              Start Your Journey
+            </Button>
+          </Card>
+        </div>
+      )}
+
       {/* Animated Background */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute top-0 left-1/4 w-1 h-full bg-gradient-to-b from-yellow-400 via-transparent to-yellow-400 animate-pulse"></div>
