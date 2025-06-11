@@ -35,7 +35,7 @@ const Index = () => {
           const redeemResponse = await fetch(`${BACKEND_API_URL}/redeem-access-code`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ shareId, senderId }),
+            body: JSON.stringify({ shareId, senderId, userIP }), // Include userIP
           });
           if (!redeemResponse.ok) throw new Error(`HTTP error! status: ${redeemResponse.status}`);
           const redeemData = await redeemResponse.json();
@@ -430,6 +430,9 @@ const Index = () => {
                   >
                     GENERATE & COPY SHARE LINK
                   </Button>
+                  <p className="text-sm text-gray-400">
+                    (2 shares and webpage opens from unique IPs grants access)
+                  </p>
                   {generatedShareLink && (
                     <p className="text-sm text-gray-400 break-all">
                       Share this link: <a href={generatedShareLink} target="_blank" rel="noopener noreferrer" className="text-yellow-400 hover:underline">{generatedShareLink}</a>
