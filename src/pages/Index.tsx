@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Download, Shield, Users, Clock, AlertTriangle, Eye, Lock } from 'lucide-react';
 import PDFViewer from '@/components/PDFViewer';
+import { Link } from 'react-router-dom'; // Import Link from react-router-dom
 
 import { API_BASE_URL } from '@/lib/api';
 
@@ -493,8 +494,8 @@ const Index = () => {
         <div className="text-center mt-12 text-gray-500 text-sm">
           <p>© 2025 The Millionaire's Secret • Elite Knowledge • GDPR & CCPA Compliant</p>
           <p className="mt-2">
-            <a href="/terms" className="hover:text-yellow-400">Terms of Service</a> •{' '}
-            <a href="/privacy" className="hover:text-yellow-400">Privacy Policy</a>
+            <Link to="/terms" className="hover:text-yellow-400">Terms of Service</Link> •{' '}
+            <Link to="/privacy" className="hover:text-yellow-400">Privacy Policy</Link>
           </p>
         </div>
       </div>
