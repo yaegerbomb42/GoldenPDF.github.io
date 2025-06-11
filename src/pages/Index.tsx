@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { Download, Shield, Users, Clock, AlertTriangle, Eye, Lock } from 'lucide-react';
 import PDFViewer from '@/components/PDFViewer';
 
+const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3001/api'; // Default for local development
+
 const Index = () => {
   const [showPDFViewer, setShowPDFViewer] = useState(false);
   const [totalDemos, setTotalDemos] = useState(1000);
@@ -14,6 +16,41 @@ const Index = () => {
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [serialNumber, setSerialNumber] = useState(1);
+  const [generatedShareLink, setGeneratedShareLink] = useState('');
+  const [accessCode, setAccessCode] = useState('');
+
+  // Function to poll backend for access code
+  const startPollingForAccessCode = (senderId: string, shareId: string) => {
+    const intervalId = setInterval(async () => {
+      try {
+        const statusResponse = await fetch(`${BACKEND_API_URL}/check-link-status/${shareId}`);
+        if (!statusResponse.ok) throw new Error(`HTTP error! status: ${statusResponse.status}`);
+        const statusData = await statusResponse.json();
+
+        if (statusData.uniqueOpens >= 2 && !statusData.accessCodeRedeemed) {
+          clearInterval(intervalId); // Stop polling
+
+          const redeemResponse = await fetch(`${BACKEND_API_URL}/redeem-access-code`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ shareId, senderId }),
+          });
+          if (!redeemResponse.ok) throw new Error(`HTTP error! status: ${redeemResponse.status}`);
+          const redeemData = await redeemResponse.json();
+
+          if (redeemData.accessCode) {
+            setAccessCode(redeemData.accessCode);
+            toast.success(`Access code granted: ${redeemData.accessCode}`);
+          } else {
+            toast.error('Failed to redeem access code.');
+          }
+        }
+      } catch (error) {
+        console.error('Error polling for access code:', error);
+        // Optionally, clear interval after a few errors or if a specific error occurs
+      }
+    }, 5000); // Poll every 5 seconds
+  };
 
   useEffect(() => {
     // Get user IP and check for bans
@@ -27,6 +64,40 @@ const Index = () => {
 
     // Load persistent demo counts and serial
     loadDemoTracking();
+
+    // Check for shareId in URL on load and track open
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareId = urlParams.get('shareId');
+    if (shareId) {
+      fetch(`${BACKEND_API_URL}/track-open/${shareId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      .then(response => {
+        if (!response.ok) {
+          // If backend is not running or endpoint doesn't exist, this will catch it
+          console.error(`Error tracking share link: HTTP status ${response.status}`);
+          toast.error('Failed to track link open. Backend might not be available.');
+          return Promise.reject('Backend not available');
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.status === 'success') {
+          console.log(`Shared link opened with ID: ${shareId}. Unique opens: ${data.uniqueOpens}`);
+          toast.success(`Link tracked! Unique opens: ${data.uniqueOpens}`);
+        } else {
+          console.log(`Link open already counted or error: ${data.status}`);
+          toast.info(`Link open already counted.`);
+        }
+      })
+      .catch(error => {
+        console.error('Error tracking share link:', error);
+        toast.error('Failed to track link open.');
+      });
+    }
   }, []);
 
   const checkIPBan = (ip: string) => {
@@ -306,6 +377,62 @@ const Index = () => {
                 >
                   BUY VIA KO-FI ($1)
                 </Button>
+
+                {/* Share Link Section */}
+                <div className="space-y-2">
+                  <Button
+                    onClick={async () => {
+                      const uniqueSenderId = localStorage.getItem('senderId') || `sender_${Date.now()}`;
+                      localStorage.setItem('senderId', uniqueSenderId);
+
+                      try {
+                        const response = await fetch(`${BACKEND_API_URL}/generate-share-link`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({ senderId: uniqueSenderId }),
+                        });
+
+                        if (!response.ok) {
+                          throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const data = await response.json();
+                        const link = data.shareLink; // Backend returns the full link
+                        const shareId = data.shareId; // Backend returns the shareId
+
+                        setGeneratedShareLink(link);
+                        navigator.clipboard.writeText(link);
+                        toast.success('Share link generated and copied to clipboard!');
+
+                        // Start polling for access code
+                        startPollingForAccessCode(uniqueSenderId, shareId);
+                      } catch (error) {
+                        console.error('Error generating share link:', error);
+                        toast.error('Failed to generate share link. Backend might not be available.');
+                      }
+                    }}
+                    variant="outline"
+                    className="w-full border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black"
+                  >
+                    GENERATE & COPY SHARE LINK
+                  </Button>
+                  {generatedShareLink && (
+                    <p className="text-sm text-gray-400 break-all">
+                      Share this link: <a href={generatedShareLink} target="_blank" rel="noopener noreferrer" className="text-yellow-400 hover:underline">{generatedShareLink}</a>
+                    </p>
+                  )}
+                </div>
+
+                {/* Access Code Display */}
+                {accessCode && (
+                  <Card className="bg-blue-900 border-blue-400 border-2 p-4 text-center">
+                    <h4 className="text-xl font-bold text-blue-400 mb-2">Your Access Code:</h4>
+                    <p className="text-3xl font-bold text-white">{accessCode}</p>
+                    <p className="text-sm text-gray-300 mt-2">Use this code to unlock special features!</p>
+                  </Card>
+                )}
                 
                 {!showCodeInput ? (
                   <Button
