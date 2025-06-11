@@ -452,7 +452,7 @@ const Index = () => {
                 {accessCode && (
                   <Card className="bg-blue-900 border-blue-400 border-2 p-4 text-center">
                     <h4 className="text-xl font-bold text-blue-400 mb-2">Your Access Code:</h4>
-                    <p className="text-3xl font-bold text-white">{accessCode}</p>
+                    <p className="text-5xl font-bold text-white tracking-widest">{accessCode}</p>
                     <p className="text-sm text-gray-300 mt-2">Use this code to unlock special features!</p>
                   </Card>
                 )}
@@ -463,7 +463,7 @@ const Index = () => {
                     variant="outline"
                     className="w-full border-green-400 text-green-400 hover:bg-green-400 hover:text-black"
                   >
-                    I COMPLETED PAYMENT
+                    I HAVE AN ACCESS CODE
                   </Button>
                 ) : (
                   <div className="space-y-3">
