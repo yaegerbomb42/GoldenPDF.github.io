@@ -73,39 +73,71 @@ export const generateWatermark = (serialNumber: string, email?: string): string 
 };
 
 // Simulate scarcity tracking
+// Simulate scarcity tracking (Frontend representation - requires backend for persistence)
 export class ScarcityTracker {
-  private static dailyCount = 25;
-  private static totalCount = 1000;
-  private static lastReset = new Date().toDateString();
-  
-  static checkAvailability(): { dailyRemaining: number; totalRemaining: number; canGenerate: boolean } {
-    const today = new Date().toDateString();
-    
-    // Reset daily count at midnight UTC
-    if (today !== this.lastReset) {
-      this.dailyCount = 25;
-      this.lastReset = today;
-    }
-    
+
+  // Frontend simulation state (NOT persistent - backend needed for actual persistence)
+  // These static properties are for frontend demo/simulation purposes only.
+  // The actual persistent state (total remaining count and next serial number)
+  // must be managed on the backend.
+  private static simulatedTotalRemaining = 1000;
+  private static simulatedNextSerialNumber = 0;
+
+  // This method should ideally call a backend endpoint to check availability
+  // The backend would return the actual total remaining count and whether generation is possible.
+  static checkAvailability(): { totalRemaining: number; canGenerate: boolean } {
+    // In a real application, this would call a backend API, e.g.:
+    // const response = await fetch('/api/scarcity/check');
+    // const data = await response.json();
+    // return { totalRemaining: data.totalRemaining, canGenerate: data.canGenerate };
+
+    // For this frontend simulation, we use local state
+    console.warn("ScarcityTracker.checkAvailability is a frontend simulation. Actual availability check requires backend.");
     return {
-      dailyRemaining: this.dailyCount,
-      totalRemaining: this.totalCount,
-      canGenerate: this.dailyCount > 0 && this.totalCount > 0
+      totalRemaining: this.simulatedTotalRemaining, // This should come from backend
+      canGenerate: this.simulatedTotalRemaining > 0 // This check should be done by backend
     };
   }
-  
-  static consumeSlot(): boolean {
-    const availability = this.checkAvailability();
-    
+
+  // This method should ideally call a backend endpoint to consume a slot and get a serial number
+  // The backend would atomically decrement the persistent count and return the assigned serial number (0-999).
+  static async consumeSlot(): Promise<string | null> {
+    // In a real application, this would call a backend API, e.g.:
+    // const response = await fetch('/api/scarcity/consume', { method: 'POST' });
+    // if (!response.ok) return null; // Backend indicates no slots
+    // const data = await response.json();
+    // return data.serialNumber;
+
+    console.warn("ScarcityTracker.consumeSlot is a frontend simulation. Actual slot consumption and serial number assignment requires backend.");
+
+    const availability = this.checkAvailability(); // Use simulated check for frontend flow
+
     if (!availability.canGenerate) {
-      return false;
+      console.log("No slots available (frontend simulation).");
+      return null;
     }
-    
-    this.dailyCount--;
-    this.totalCount--;
-    
-    console.log(`Slot consumed. Daily: ${this.dailyCount}, Total: ${this.totalCount}`);
-    return true;
+
+    // Simulate backend logic: decrement count and assign serial number
+    const assignedSerialNumber = this.simulatedNextSerialNumber.toString(); // Serial numbers 0 to 999
+
+    this.simulatedTotalRemaining--; // This decrement should happen on the backend
+    this.simulatedNextSerialNumber++; // This increment should happen on the backend
+
+    console.log(`Slot consumed (frontend simulation). Total remaining: ${this.simulatedTotalRemaining}, Assigned Serial: ${assignedSerialNumber}`);
+
+    // Simulate backend API call delay
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate backend processing
+
+    return assignedSerialNumber; // Return the simulated serial number
+  }
+
+  // Method to reset the simulation state (for frontend testing/demo purposes only)
+  // This method should NOT exist in a production frontend connected to a persistent backend
+  static resetSimulation(): void {
+    console.warn("ScarcityTracker.resetSimulation is for frontend simulation ONLY. Do not use in production with a backend.");
+    this.simulatedTotalRemaining = 1000;
+    this.simulatedNextSerialNumber = 0;
+    console.log("ScarcityTracker simulation state reset.");
   }
 }
 
